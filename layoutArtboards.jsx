@@ -22,7 +22,9 @@ function layoutArtboards() {
     var leftShift = totalWidth(artboards) + 72;
     for (var i = 0; i < artboards.length; i++) {
         var tmpRect = offsetBy(artboards[i].artboardRect, -leftShift, 0);
+        // TODO: select contents before moving artboard
         artboards[i].artboardRect = tmpRect;
+        // TODO: center contents to artboard after moving
     }
 
     // move artboards into arrangement
@@ -34,8 +36,10 @@ function layoutArtboards() {
     var k = 0;
     for (var j = 0; j < config.rows.length; j++) {
         for (var i = 0; i < config.rows[j].length; i++) {
+            // TODO: select contents before moving artboard
             var placedRect = moveTo(artboards[k].artboardRect, currX, currY);
             artboards[k].artboardRect = placedRect;
+            // TODO: center contents to artboard after moving
             currX += artboardWidth + artboardSpace;
             k++;
         }
