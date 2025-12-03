@@ -1,6 +1,5 @@
 ﻿//@include 'json2.js';
 
-
 //  main
 $.writeln('app starting')
 
@@ -9,25 +8,41 @@ if (app.homeScreenVisible) {
     $.writeln('No open file')
     Error.runtimeError(9999, 'No open file');
 }
+app.coordinateSystem = CoordinateSystem.DOCUMENTCOORDINATESYSTEM;
 layoutArtboards();
 $.writeln('done');
 
 
 function layoutArtboards() {
-    var config = getConfig();
-    $.writeln(config['settings']['width']);
-
+    const config = getConfig();
 
     var artboards = app.activeDocument.artboards;
-    moveAsideArtboards(config, doc.artboards);
-    layoutArtboards(config, doc.artboards);
-    
+
+    // move all artboards to left temporarily to clear space
+    var leftShift = totalWidth(artboards) + 72;
     for (var i = 0; i < artboards.length; i++) {
-        // $.writeln(artboards[i]);
-        // processArtboard(doc.artboards[i]);
+        var tmpRect = offsetBy(artboards[i].artboardRect, -leftShift, 0);
+        artboards[i].artboardRect = tmpRect;
     }
-    // var artboard = doc.artboards[1];
-    processArtboard(doc.artboards[1]);
+
+    // move artboards into arrangement
+    var currX = 0;
+    var currY = 0;
+    const artboardWidth = new UnitValue(config.settings.width, config.settings.unit).as("px");
+    const artboardHeight = new UnitValue(config.settings.height, config.settings.unit).as("px");
+    const artboardSpace = new UnitValue(config.settings.space, config.settings.unit).as("px");
+    var k = 0;
+    for (var j = 0; j < config.rows.length; j++) {
+        for (var i = 0; i < config.rows[j].length; i++) {
+            var placedRect = moveTo(artboards[k].artboardRect, currX, currY);
+            artboards[k].artboardRect = placedRect;
+            currX += artboardWidth + artboardSpace;
+            k++;
+        }
+        currX = 0;
+        currY -= artboardHeight + artboardSpace;
+    }
+    $.writeln('layoutArtboards done')
 }
 
 function getConfig() {
@@ -39,39 +54,21 @@ function getConfig() {
     return config;
 }
 
-function moveAsideArtboards(config, artboards) {
-    // determine max right edge of all artboards
-    var max_right;
-    //  move all artboards left by that much + space
-    // for ...
-    // var rect = artboard.artboardRect
-    // moveTo(rect, rect[0] - max_right - new Units(space).as(px), rect[1])
-}
-function layoutArtboards(config, artboards) {
-
-}
-
-function processArtboard(artboard) {
-    $.writeln(artboard.name);
-    var oldRect = artboard.artboardRect;
-
-
-    // var newRect = convertArtboardRect(oldRect);
-    var newRect = moveTo(oldRect, 0, 0);
-    artboard.artboardRect = newRect;
+function totalWidth(artboards) {
+    var minX = 0;
+    var maxX = 0;
+    for (var i = 0; i < artboards.length; i++) {
+        var rect = artboards[i].artboardRect;
+        minX = Math.min(minX, rect[0]);
+        maxX = Math.max(maxX, rect[2]);
+    }
+    return maxX - minX;
 }
 
-function convertArtboardRect(oldRect) {
-    var offset = [-10, +15, -10, +15];
-    // var ret = oldRect + offset;
-    // return ret;
-    var newRect = [oldRect[0] + offset[0], oldRect[1] + offset[1], oldRect[2] + offset[2], oldRect[3] + offset[3]];
-    return newRect;
-}
 function moveTo(oldRect, newX, newY) {
     var width = oldRect[2] - oldRect[0];
     var height = oldRect[3] - oldRect[1];
-    var newRect = [newX, newY, newY + width, newY + height];
+    var newRect = [newX, newY, newX + width, newY + height];
     return newRect;
 }
 function offsetBy(oldRect, offX, offY) {
