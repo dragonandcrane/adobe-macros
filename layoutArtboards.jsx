@@ -8,12 +8,15 @@ if (app.homeScreenVisible) {
     $.writeln('No open file')
     Error.runtimeError(9999, 'No open file');
 }
-app.coordinateSystem = CoordinateSystem.DOCUMENTCOORDINATESYSTEM;
+
 layoutArtboards();
 $.writeln('done');
 
 
 function layoutArtboards() {
+    // moving boards requires absolute coord system, store to revert after
+    const coordSys = app.coordinateSystem;
+    app.coordinateSystem = CoordinateSystem.DOCUMENTCOORDINATESYSTEM;
     const config = getConfig();
 
     var artboards = app.activeDocument.artboards;
@@ -21,31 +24,28 @@ function layoutArtboards() {
     // move all artboards to left temporarily to clear space
     var leftShift = totalWidth(artboards) + 72;
     for (var i = 0; i < artboards.length; i++) {
-        var tmpRect = offsetBy(artboards[i].artboardRect, -leftShift, 0);
-        // TODO: select contents before moving artboard
-        artboards[i].artboardRect = tmpRect;
-        // TODO: center contents to artboard after moving
+        offsetBy(artboards[i], -leftShift, 0);
     }
 
     // move artboards into arrangement
     var currX = 0;
     var currY = 0;
-    const artboardWidth = new UnitValue(config.settings.width, config.settings.unit).as("px");
-    const artboardHeight = new UnitValue(config.settings.height, config.settings.unit).as("px");
-    const artboardSpace = new UnitValue(config.settings.space, config.settings.unit).as("px");
+    const abWidth = new UnitValue(config.settings.width, config.settings.unit).as("px");
+    const abHeight = new UnitValue(config.settings.height, config.settings.unit).as("px");
+    const abSpace = new UnitValue(config.settings.space, config.settings.unit).as("px");
     var k = 0;
     for (var j = 0; j < config.rows.length; j++) {
         for (var i = 0; i < config.rows[j].length; i++) {
-            // TODO: select contents before moving artboard
-            var placedRect = moveTo(artboards[k].artboardRect, currX, currY);
-            artboards[k].artboardRect = placedRect;
-            // TODO: center contents to artboard after moving
-            currX += artboardWidth + artboardSpace;
+            moveTo(artboards[k], currX, currY);
+            currX += abWidth + abSpace;
             k++;
         }
         currX = 0;
-        currY -= artboardHeight + artboardSpace;
+        currY -= abHeight + abSpace;
     }
+
+    // revert coord sys to original state
+    app.coordinateSystem = coordSys;
     $.writeln('layoutArtboards done')
 }
 
@@ -69,13 +69,15 @@ function totalWidth(artboards) {
     return maxX - minX;
 }
 
-function moveTo(oldRect, newX, newY) {
+function moveTo(artboard, newX, newY) {
+    const oldRect = artboard.artboardRect;
     var width = oldRect[2] - oldRect[0];
     var height = oldRect[3] - oldRect[1];
-    var newRect = [newX, newY, newX + width, newY + height];
-    return newRect;
+    // TODO: select contents before moving artboard
+    artboard.artboardRect = [newX, newY, newX + width, newY + height];
+    // TODO: center contents to artboard after moving
+    // return newRect;
 }
-function offsetBy(oldRect, offX, offY) {
-    var newRect = moveTo(oldRect, oldRect[0] + offX, oldRect[1] + offY);
-    return newRect;
+function offsetBy(artboard, offX, offY) {
+    moveTo(artboard, artboard.artboardRect[0] + offX, artboard.artboardRect[1] + offY);
 }
