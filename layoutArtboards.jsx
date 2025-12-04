@@ -19,11 +19,13 @@ function layoutArtboards() {
     app.coordinateSystem = CoordinateSystem.DOCUMENTCOORDINATESYSTEM;
     const config = getConfig();
 
-    var artboards = app.activeDocument.artboards;
+    var doc = app.activeDocument;
+    var artboards = doc.artboards;
 
     // move all artboards to left temporarily to clear space
-    var leftShift = totalWidth(artboards) + 72;
+    const leftShift = totalWidth(artboards) + 72;
     for (var i = 0; i < artboards.length; i++) {
+        artboards.setActiveArtboardIndex(i);
         offsetBy(artboards[i], -leftShift, 0);
     }
 
@@ -33,12 +35,13 @@ function layoutArtboards() {
     const abWidth = new UnitValue(config.settings.width, config.settings.unit).as("px");
     const abHeight = new UnitValue(config.settings.height, config.settings.unit).as("px");
     const abSpace = new UnitValue(config.settings.space, config.settings.unit).as("px");
-    var k = 0;
+    var abIndex = 0;
     for (var j = 0; j < config.rows.length; j++) {
         for (var i = 0; i < config.rows[j].length; i++) {
-            moveTo(artboards[k], currX, currY);
+            artboards.setActiveArtboardIndex(abIndex);
+            moveTo(artboards[abIndex], currX, currY);
             currX += abWidth + abSpace;
-            k++;
+            abIndex++;
         }
         currX = 0;
         currY -= abHeight + abSpace;
@@ -70,14 +73,17 @@ function totalWidth(artboards) {
 }
 
 function moveTo(artboard, newX, newY) {
-    const oldRect = artboard.artboardRect;
-    var width = oldRect[2] - oldRect[0];
-    var height = oldRect[3] - oldRect[1];
-    // TODO: select contents before moving artboard
-    artboard.artboardRect = [newX, newY, newX + width, newY + height];
-    // TODO: center contents to artboard after moving
-    // return newRect;
+    const abRect = artboard.artboardRect;
+    offsetBy(artboard, newX-abRect[0], newY-abRect[1]);
 }
 function offsetBy(artboard, offX, offY) {
-    moveTo(artboard, artboard.artboardRect[0] + offX, artboard.artboardRect[1] + offY);
+    // move objects
+    doc.selectObjectsOnActiveArtboard();
+    for (var i = 0; i < app.selection.length; i ++) {
+        var pos = app.selection[i].position;
+        app.selection[i].position = [pos[0] + offX, pos[1] + offY];
+    }
+    // move artboard
+    const oldRect = artboard.artboardRect;
+    artboard.artboardRect = [oldRect[0]+offX, oldRect[1]+offY, oldRect[2]+offX, oldRect[3]+offY];
 }
