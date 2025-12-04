@@ -23,10 +23,11 @@ function layoutArtboards() {
     var artboards = doc.artboards;
 
     // move all artboards to left temporarily to clear space
+    $.writeln('clearance');
     const leftShift = totalWidth(artboards) + 72;
     for (var i = 0; i < artboards.length; i++) {
         artboards.setActiveArtboardIndex(i);
-        offsetBy(artboards[i], -leftShift, 0);
+        offsetBy(config, artboards[i], -leftShift, 0);
     }
 
     // move artboards into arrangement
@@ -36,10 +37,12 @@ function layoutArtboards() {
     const abHeight = new UnitValue(config.settings.height, config.settings.unit).as("px");
     const abSpace = new UnitValue(config.settings.space, config.settings.unit).as("px");
     var abIndex = 0;
+    $.writeln('arrangement');
     for (var j = 0; j < config.rows.length; j++) {
         for (var i = 0; i < config.rows[j].length; i++) {
+            // TODO: create artboard if doesn't exist
             artboards.setActiveArtboardIndex(abIndex);
-            moveTo(artboards[abIndex], currX, currY);
+            moveTo(config, artboards[abIndex], currX, currY);
             currX += abWidth + abSpace;
             abIndex++;
         }
@@ -72,17 +75,30 @@ function totalWidth(artboards) {
     return maxX - minX;
 }
 
-function moveTo(artboard, newX, newY) {
+function moveTo(config, artboard, newX, newY) {
     const abRect = artboard.artboardRect;
-    offsetBy(artboard, newX-abRect[0], newY-abRect[1]);
+    offsetBy(config, artboard, newX-abRect[0], newY-abRect[1]);
 }
-function offsetBy(artboard, offX, offY) {
+function offsetBy(config, artboard, offX, offY) {
     // move objects
     doc.selectObjectsOnActiveArtboard();
     for (var i = 0; i < app.selection.length; i ++) {
         var pos = app.selection[i].position;
         app.selection[i].position = [pos[0] + offX, pos[1] + offY];
+
+        // reraster
+        if (app.selection[i] instanceof RasterItem && config.RasterizeOptions) {
+            var opts = new RasterizeOptions();
+            opts.resolution = config.RasterizeOptions.resolution;
+            opts.includeLayers = config.RasterizeOptions.includeLayers;
+            opts.transparency = config.RasterizeOptions.transparency;
+
+            var raster = app.selection[i];
+            var rerastered = app.activeDocument.rasterize(raster, raster.visibleBounds, opts);
+            rerastered.name = artboard.name;
+        }
     }
+
     // move artboard
     const oldRect = artboard.artboardRect;
     artboard.artboardRect = [oldRect[0]+offX, oldRect[1]+offY, oldRect[2]+offX, oldRect[3]+offY];
