@@ -40,10 +40,14 @@ function layoutArtboards() {
     $.writeln('arrangement');
     for (var j = 0; j < config.rows.length; j++) {
         for (var i = 0; i < config.rows[j].length; i++) {
-            // TODO: create artboard if doesn't exist
+            // create artboard if doesn't exist
+            if (abIndex >= artboards.length) {
+                artboards.add([currX, currY, currX+abWidth, currY-abHeight]);
+            }
             artboards.setActiveArtboardIndex(abIndex);
             moveTo(config, artboards[abIndex], currX, currY);
             currX += abWidth + abSpace;
+            artboards[abIndex].name = config.rows[j][i];
             abIndex++;
         }
         currX = 0;
