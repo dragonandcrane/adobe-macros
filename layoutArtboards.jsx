@@ -33,6 +33,8 @@ function layoutArtboards() {
     // move artboards into arrangement
     var currX = 0;
     var currY = 0;
+    var i = 0;
+    var j = 0;
     const abWidth = new UnitValue(config.settings.width, config.settings.unit).as("px");
     const abHeight = new UnitValue(config.settings.height, config.settings.unit).as("px");
     const abSpace = new UnitValue(config.settings.space, config.settings.unit).as("px");
@@ -91,7 +93,7 @@ function offsetBy(config, artboard, offX, offY) {
         app.selection[i].position = [pos[0] + offX, pos[1] + offY];
 
         // reraster
-        if (app.selection[i] instanceof RasterItem && config.RasterizeOptions) {
+        if ((app.selection[i] instanceof RasterItem || app.selection[i] instanceof PlacedItem) && config.RasterizeOptions) {
             var opts = new RasterizeOptions();
             opts.resolution = config.RasterizeOptions.resolution;
             opts.includeLayers = config.RasterizeOptions.includeLayers;
@@ -100,6 +102,7 @@ function offsetBy(config, artboard, offX, offY) {
             var raster = app.selection[i];
             var rerastered = app.activeDocument.rasterize(raster, raster.visibleBounds, opts);
             rerastered.name = artboard.name;
+            rerastered.zOrder(ZOrderMethod.SENDTOBACK);
         }
     }
 
